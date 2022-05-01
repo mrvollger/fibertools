@@ -1,4 +1,4 @@
-"""fibertools utils
+"""Utilities for reads and making features out of m6a and MSPs.
 """
 import polars as pl
 import pandas as pd
