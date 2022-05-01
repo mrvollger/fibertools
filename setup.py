@@ -36,7 +36,7 @@ setup(
     description="A project for handling fiber-seq data.",
     entry_points={
         "console_scripts": [
-            "fibertools=fibertools.cli:main",
+            "fibertools=fibertools.fibertools:main",
         ],
     },
     install_requires=requirements,

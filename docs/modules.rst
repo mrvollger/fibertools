@@ -1,8 +1,8 @@
 Modules
 ======================================
 
-utils 
-=====
+.. automodule:: fibertools
+    :imported-members:
 
 .. automodule:: fibertools.utils
     :members:

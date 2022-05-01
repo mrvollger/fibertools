@@ -3,10 +3,10 @@
 import argparse
 import sys
 import logging
-from fibertools import utils as ft
+from .utils import make_AT_genome, make_msp_features, join_msp_and_m6a
 
 
-def main():
+def parse():
     """Console script for fibertools."""
     parser = argparse.ArgumentParser(
         description="", formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -45,9 +45,9 @@ def main():
     logging.basicConfig(format=log_format, level=log_level)
 
     # run steps
-    df = ft.join_msp_and_m6a(args)
-    AT_genome = ft.make_AT_genome(args.genome, df)
-    out = ft.make_msp_features(args, df, AT_genome)
+    df = join_msp_and_m6a(args)
+    AT_genome = make_AT_genome(args.genome, df)
+    out = make_msp_features(args, df, AT_genome)
 
     logging.debug(f"Sorting and writting features to out.")
     (
@@ -57,7 +57,3 @@ def main():
     )
 
     return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
