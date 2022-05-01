@@ -6,3 +6,4 @@ numba
 polars
 pandas
 numpy
+pysam
