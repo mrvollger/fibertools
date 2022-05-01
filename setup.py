@@ -4,46 +4,51 @@
 
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
+with open("README.rst") as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements = [ ]
+requirements = [
+    "pandas>=1.2",
+    "numpy>=1.20",
+    "polars>=0.13" "pysam>=0.16",
+    "numba>=0.53",
+]
 
-test_requirements = [ ]
+test_requirements = []
 
 setup(
     author="Mitchell R. Vollger",
-    author_email='mrvollger@gmail.com',
-    python_requires='>=3.6',
+    author_email="mrvollger@gmail.com",
+    python_requires=">=3.6",
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     description="A project for handling fiber-seq data.",
     entry_points={
-        'console_scripts': [
-            'fibertools=fibertools.cli:main',
+        "console_scripts": [
+            "fibertools=fibertools.cli:main",
         ],
     },
     install_requires=requirements,
     license="MIT license",
-    long_description=readme + '\n\n' + history,
+    long_description=readme + "\n\n" + history,
     include_package_data=True,
-    keywords='fibertools',
-    name='fibertools',
-    packages=find_packages(include=['fibertools', 'fibertools.*']),
-    test_suite='tests',
+    keywords="fibertools",
+    name="fibertools",
+    packages=find_packages(include=["fibertools", "fibertools.*"]),
+    test_suite="tests",
     tests_require=test_requirements,
-    url='https://github.com/mrvollger/fibertools',
-    version='0.1.0',
+    url="https://github.com/mrvollger/fibertools",
+    version="0.1.0",
     zip_safe=False,
 )

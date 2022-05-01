@@ -5,7 +5,7 @@
 
 import unittest
 
-from fibertools import fibertools
+from fibertools import utils
 
 
 class TestFibertools(unittest.TestCase):
