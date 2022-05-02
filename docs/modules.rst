@@ -1,4 +1,4 @@
-Modules
+API
 ======================================
 
 Top level Functions
@@ -7,9 +7,11 @@ Top level Functions
 .. automodule:: fibertools
    :imported-members:
    :members:
-   :undoc-members:
-   :show-inheritance:
 
 Other
 -----
+
+.. automodule:: fibertools.utils
+    :members:
+
 
