@@ -1,9 +1,16 @@
 Modules
 ======================================
 
-.. automodule:: fibertools
-    :imported-members:
+.. currentmodule:: fibertools
 
-.. automodule:: fibertools.utils
-    :members:
+Primary Functions
+----------------- 
+.. automodule:: fibertools
+   :imported-members:
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Other
+-------
 

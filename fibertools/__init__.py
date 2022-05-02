@@ -1,8 +1,6 @@
 """Top-level package for fibertools."""
+from .utils import *
 
 __author__ = """Mitchell R. Vollger"""
 __email__ = "mrvollger@gmail.com"
 __version__ = "0.1.0"
-
-
-from .utils import *

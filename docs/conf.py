@@ -37,8 +37,20 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.coverage",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
 ]
 
+
+# trying to fix things
+autosummary_generate = True
+autodoc_default_options = {
+    "members": True,
+    "inherited-members": True,
+    "member-order": "bysource",
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
