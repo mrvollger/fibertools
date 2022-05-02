@@ -123,6 +123,16 @@ def split_to_ints(df, col, sep=","):
 
 
 def read_in_bed12_file(bed_file, n_rows=None, tag=None):
+    """Read a bed12 file into a polars dataframe.
+
+    Args:
+        bed_file (string): path to bed12 file.
+        n_rows (int, optional): only read the first n rows. Defaults to None.
+        tag (string, optional): Adds a string the end of the columns names. Defaults to None.
+
+    Returns:
+        pl.DataFrame: Dataframe of bed12 file.
+    """
     col_names = [
         "ct",
         "st",

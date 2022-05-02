@@ -1,10 +1,9 @@
 Modules
 ======================================
 
-.. currentmodule:: fibertools
+Top level Functions
+------------------- 
 
-Primary Functions
------------------ 
 .. automodule:: fibertools
    :imported-members:
    :members:
@@ -12,5 +11,5 @@ Primary Functions
    :show-inheritance:
 
 Other
--------
+-----
 
