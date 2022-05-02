@@ -3,7 +3,8 @@
 import argparse
 import sys
 import logging
-from .utils import make_AT_genome, make_msp_features, join_msp_and_m6a
+from .utils import make_msp_features, join_msp_and_m6a
+import fibertools as ft
 
 
 def parse():
@@ -46,7 +47,7 @@ def parse():
 
     # run steps
     df = join_msp_and_m6a(args)
-    AT_genome = make_AT_genome(args.genome, df)
+    AT_genome = ft.make_AT_genome(args.genome, df)
     out = make_msp_features(args, df, AT_genome)
 
     logging.debug(f"Sorting and writting features to out.")
