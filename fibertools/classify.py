@@ -224,7 +224,8 @@ def make_percolator_input(msp_features_df, dhs_df, sort=True, min_tp_msp_len=40)
     out_df["scannr"] = out_df.SpecId
     out_df["log_msp_len"] = np.log(out_df["msp_len"])
 
-    out_df.sort_values(["Label"], ascending=False, inplace=True)
+    if sort:
+        out_df.sort_values(["Label"], ascending=False, inplace=True)
     return out_df
 
 
