@@ -4,15 +4,12 @@ import pandas as pd
 from black import out
 from numba import njit
 import numpy as np
+import fibertools as ft
+import mokapot
 import logging
 import sys
-import fibertools as ft
-import pyranges as pr
-import mokapot
-
-
-numba_logger = logging.getLogger("numba")
-numba_logger.setLevel(logging.WARNING)
+from xgboost import XGBClassifier
+from sklearn.model_selection import GridSearchCV
 
 
 @njit
@@ -114,36 +111,6 @@ def get_msp_features(row, AT_genome, bin_width=40, bin_num=5):
     return rtn
 
 
-def split_to_ints(df, col, sep=",", trim=True):
-    """Split a columns with list of ints seperated by
-    "sep" into a numpy array quickly.
-
-    Args:
-        df (dataframe): dataframe that is like a bed12 file.
-        col (str): column name within the dataframe to split up.
-        sep (str, optional): Defaults to ",".
-        trim (bool, optional): Remove the first and last call from the bed12 (removes bookendings). Defaults to True.
-
-    Returns:
-        column: New column that is a list of numpy array of ints.
-    """
-    if trim:
-        return df[col].apply(lambda x: np.fromstring(x, sep=sep, dtype=np.int32)[1:-1])
-    return df[col].apply(lambda x: np.fromstring(x, sep=sep, dtype=np.int32))
-
-
-def join_msp_and_m6a(args):
-    msp = ft.read_in_bed12_file(args.msp_bed12, n_rows=args.n_rows, tag="msp")
-    logging.debug("Read in MSP file.")
-    m6a = ft.read_in_bed12_file(args.m6a_bed12, n_rows=args.n_rows, tag="m6a")
-    logging.debug("Read in m6a file.")
-    both = m6a.join(msp, on=["ct", "st", "en", "fiber"]).drop(
-        ["ten_msp", "tst_msp", "ten_m6a", "tst_m6a", "bsize_m6a"]
-    )
-    logging.debug("Joined m6a and MSP data.")
-    return both
-
-
 def make_msp_features(args, df, AT_genome):
     msp_stuff = []
     rows = df.to_dicts()
@@ -183,106 +150,123 @@ def make_msp_features(args, df, AT_genome):
         .replace([np.inf, -np.inf], np.nan)
         .fillna(0)
     )
-    # out = out.astype(
-    #    {
-    #        "st": "int",
-    #        "en": "int",
-    #        "msp_len": "int",
-    #    }
-    # )
     return out
 
 
-def n_overlaps(a_df, b_df):
-    """returns the number of overlaps for each row in a_df found within b_df
+def make_percolator_input(msp_features_df, dhs_df, sort=True):
+    """write a input file that works with percolator.
 
     Args:
-        a_df (dataframe): _description_
-        b_df (dataframe): _description_
+        msp_features_df (_type_): _description_
+        out_file (_type_): _description_
 
-    Returns:
-        numpy array: array with overlap counts.
+    return None
     """
-    a = pr.PyRanges(
-        chromosomes=a_df.ct.to_list(),
-        starts=a_df.st.to_list(),
-        ends=a_df.en.to_list(),
-    )
-    b = pr.PyRanges(
-        chromosomes=b_df.ct.to_list(),
-        starts=b_df.st.to_list(),
-        ends=b_df.en.to_list(),
-    )
-    return a.count_overlaps(b).NumberOverlaps.values
+    # need to add:   SpecId	Label ... Peptide Proteins
+    dhs_null = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name != "DHS"])
+    dhs_true = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name == "DHS"])
+
+    msp_features_df.insert(1, "Label", -1)
+    msp_features_df.loc[dhs_true > 0, "Label"] = 1
+    condition = (dhs_null > 0) | (dhs_true > 0)
+
+    out_df = msp_features_df.loc[condition, :].copy()
+    out_df.insert(0, "SpecId", out_df.index)
+
+    to_remove = ["ct", "st", "en", "fiber"]
+    out_df.drop(to_remove, axis=1, inplace=True)
+
+    out_df["Peptide"] = out_df.SpecId
+    out_df["Proteins"] = out_df.SpecId
+    out_df["scannr"] = out_df.SpecId
+
+    out_df.sort_values(["Label"], ascending=False, inplace=True)
+    out_df.to_csv("pin.tab", sep="\t", index=False)
+    # psms = mokapot.read_pin("pin.tab")
+
+    psms = mokapot.read_pin(out_df)
+    moka_conf, models = mokapot.brew(psms, test_fdr=0.1)
+    moka_conf.psms.to_csv(sys.stderr, sep="\t", index=False)
 
 
-def disjoint_bins(start, ends, spacer_size=0):
-    """returns bins that for the given intervals such that no intervals within a bin will overlap.
-    INPUTS must be SORTED by start position!
+def make_percolator_input(msp_features_df, dhs_df, sort=True, min_tp_msp_len=40):
+    """write a input file that works with percolator.
 
     Args:
-        start (list): list of start positions
-        ends (list): list of end positions
-        spacer_size (int, optional): minimum space between intervals in the same bin. Defaults to 0.
+        msp_features_df (_type_): _description_
+        out_file (_type_): _description_
 
-    Returns:
-        (list): A list of bins for each interval starting at 0.
+    return None
     """
-    max_bin = 0
-    min_starts = [(-spacer_size, max_bin)]
-    bins = []
-    for st, en in zip(start, ends):
-        added = False
-        for idx, (min_bin_st, b) in enumerate(min_starts):
-            if st >= min_bin_st + spacer_size:
-                min_starts[idx] = (en, b)
-                bins.append(b)
-                added = True
-                break
-        if not added:
-            max_bin += 1
-            min_starts.append((en, max_bin))
-            bins.append(max_bin)
+    # need to add:   SpecId	Label ... Peptide Proteins
+    dhs_null = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name != "DHS"])
+    dhs_true = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name == "DHS"])
 
-    return bins
+    out_df = msp_features_df.copy()
+
+    out_df.insert(1, "Label", 0)
+    out_df.loc[dhs_true > 0, "Label"] = 1
+    out_df.loc[dhs_null > 0, "Label"] = -1
+    # if the msp is short make it null
+    out_df.loc[(dhs_true > 0) & (out_df.msp_len <= min_tp_msp_len), "Label"] = -1
+
+    condition = (dhs_null > 0) | (dhs_true > 0)
+
+    if "SpecId" in out_df.columns:
+        out_df.drop("SpecId", axis=1, inplace=True)
+    out_df.insert(0, "SpecId", out_df.index)
+
+    to_remove = ["ct", "st", "en", "fiber"]
+    out_df.drop(to_remove, axis=1, inplace=True)
+
+    out_df["Peptide"] = out_df.SpecId
+    out_df["Proteins"] = out_df.SpecId
+    out_df["scannr"] = out_df.SpecId
+    out_df["log_msp_len"] = np.log(out_df["msp_len"])
+
+    out_df.sort_values(["Label"], ascending=False, inplace=True)
+    return out_df
 
 
-def null_space_in_bed12(
-    df,
-    bed12_st_col="bst_msp",
-    bed12_size_col="bsize_msp",
-    make_thin=True,
-    null_color="230,230,230",
-):
-    """Make a pandas df that is occupies the space between entires in bed12.
+def find_nearest_q_values(orig_scores, orig_q_values, new_scores):
+    orig_scores = np.flip(orig_scores)
+    orig_q_values = np.flip(orig_q_values)
+    idxs = np.searchsorted(orig_scores, new_scores, side="left")
+    idxs[idxs >= len(orig_q_values)] = len(orig_q_values) - 1
+    return np.array(orig_q_values)[idxs]
 
-    Args:
-        df (_type_): _description_
-        bed12_st_col (str, optional): _description_. Defaults to "bst_msp".
-        bed12_size_col (str, optional): _description_. Defaults to "bsize_msp".
-        make_thin (bool, optional): _description_. Defaults to True.
-        null_color (str, optional): _description_. Defaults to "230,230,230".
 
-    Returns:
-        pandas df: ~bed9 pandas df with null space between bed12 entries.
-    """
-    rows = pd.DataFrame(df.to_dicts()).copy()
-    rows["spacer_st"] = rows.apply(
-        lambda row: (row[bed12_st_col] + row[bed12_size_col])[:-1] + row["st"], axis=1
+def train_classifier(train, subset_max_train=200_000, test_fdr=0.05, train_fdr=0.1):
+    min_size = 1
+    train_psms = mokapot.read_pin(train[train.msp_len >= min_size])
+    scale_pos_weight = sum(train.Label == -1) / sum(train.Label == 1)
+    grid = {
+        "n_estimators": [50, 100, 150],
+        "scale_pos_weight": [scale_pos_weight],  # [0.5, 1, 2], #np.logspace(0, 2, 3),
+        "max_depth": [3, 6, 9],
+        "min_child_weight": [3, 6, 9, 12],
+        "gamma": [0.1, 1, 10],
+    }
+    xgb_mod = GridSearchCV(
+        XGBClassifier(use_label_encoder=False, eval_metric="auc"),
+        param_grid=grid,
+        cv=3,
+        scoring="roc_auc",
+        verbose=2,
     )
-    rows["spacer_en"] = rows.apply(
-        lambda row: row[bed12_st_col][1:] + row["st"] + 1, axis=1
+    mod = mokapot.Model(xgb_mod, train_fdr=train_fdr, subset_max_train=subset_max_train)
+    mokapot_conf, models = mokapot.brew(train_psms, mod, test_fdr=test_fdr)
+    return (mokapot_conf, models)
+
+
+def assign_classifier_fdr(pin_data, models, mokapot_conf):
+    psms = mokapot.read_pin(pin_data)
+    all_scores = [model.predict(pin_data) for model in models]
+    scores = np.mean(np.array(all_scores), axis=0)
+    # scores = np.amin(np.array(all_scores), axis=0)
+    # scores = np.amax(np.array(all_scores), axis=0)
+
+    q_values = find_nearest_q_values(
+        mokapot_conf.psms["mokapot score"], mokapot_conf.psms["mokapot q-value"], scores
     )
-    z = rows.explode(["spacer_st", "spacer_en"])
-
-    # think starts
-    z["tst"] = z["spacer_st"]
-    if make_thin:
-        z["ten"] = z["spacer_st"]  # make non msp thin blocks
-    else:
-        z["ten"] = z["spacer_en"]
-
-    z["color"] = null_color
-    z.drop(columns=["st", "en"], inplace=True)
-    z.rename(columns={"spacer_st": "st", "spacer_en": "en"}, inplace=True)
-    return z
+    return q_values

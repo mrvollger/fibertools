@@ -6,13 +6,14 @@ import numpy as np
 import sys
 
 
-def read_in_bed12_file(bed_file, n_rows=None, tag=None):
+def read_in_bed12_file(bed_file, n_rows=None, tag=None, trim=True):
     """Read a bed12 file into a polars dataframe.
 
     Args:
         bed_file (string): path to bed12 file.
         n_rows (int, optional): only read the first n rows. Defaults to None.
         tag (string, optional): Adds a string the end of the columns names. Defaults to None.
+        trim (bool, optional): Trim the first and last block of the bed12.
 
     Returns:
         pl.DataFrame: Dataframe of bed12 file.
@@ -38,8 +39,8 @@ def read_in_bed12_file(bed_file, n_rows=None, tag=None):
         has_header=False,
         n_rows=n_rows,
     )
-    df["bst"] = split_to_ints(df, "bst")
-    df["bsize"] = split_to_ints(df, "bsize")
+    df["bst"] = split_to_ints(df, "bst", trim=trim)
+    df["bsize"] = split_to_ints(df, "bsize", trim=trim)
     if tag is not None:
         df.columns = [
             f"{col}_{tag}" if idx > 4 else col for idx, col in enumerate(df.columns)
@@ -80,3 +81,47 @@ def make_AT_genome(genome_file, df):
 
     logging.debug("")
     return AT_genome
+
+
+def read_in_bed_file(bed_file, n_rows=None, tag=None):
+    """Read a bed file into a polars dataframe.
+
+    Args:
+        bed_file (string): path to bed file.
+        n_rows (int, optional): only read the first n rows. Defaults to None.
+        tag (string, optional): Adds a string the end of the columns names. Defaults to None.
+
+    Returns:
+        pl.DataFrame: Dataframe of bed12 file.
+    """
+    col_names = [
+        "ct",
+        "st",
+        "en",
+        "fiber",
+        "score",
+        "strand",
+        "tst",
+        "ten",
+        "color",
+        "bct",
+        "bsize",
+        "bst",
+    ]
+    df = pl.read_csv(
+        bed_file,
+        sep="\t",
+        comment_char="#",
+        has_header=False,
+        n_rows=n_rows,
+    )
+    # df["bst"] = split_to_ints(df, "bst")
+    # df["bsize"] = split_to_ints(df, "bsize")
+
+    if tag is not None:
+        df.columns = [
+            f"{col}_{tag}" if idx > 4 else col for idx, col in enumerate(df.columns)
+        ]
+    first_four = ["ct", "st", "en", "name"]
+    df.columns = first_four + df.columns[4:]
+    return df
