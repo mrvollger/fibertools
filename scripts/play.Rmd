@@ -1,0 +1,294 @@
+```{r}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(GenomicRanges)
+library(cowplot)
+library(cowplot)
+library(RColorBrewer)
+library(scales)
+library(ggside)
+library(tidyverse)
+```
+
+
+```{r}
+df <- fread("~/Desktop/tmp.tbl.gz")
+dim(df)
+
+all.df = df %>%
+    mutate(
+        betweenMSP=case_when(
+            color == "230,230,230" ~ TRUE,
+            TRUE ~ FALSE
+        ),
+        fillColor = factor(floor(20 * qValue) / 20) 
+    )
+```
+
+```{r}
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
+
+m_st <- 3835000
+m_en <- 3865000
+
+cov = all.df %>%
+    filter(en > m_st & st < m_en) %>%
+    rowwise() %>%
+    mutate(
+        st = list(seq(st, en))
+    ) %>% 
+    tidyr::unnest(st) %>%
+    mutate(
+        en = st +1
+    ) %>%
+    group_by(st,en) %>%
+    summarise(
+        `0.01` = (sum(qValue <= 0.01))/n(),
+        #`0.05` = (sum(qValue <= 0.05))/n(),
+        `0.10` = (sum(qValue <= 0.1))/n(),
+        #`0.20` = (sum(qValue <= 0.2))/n(),
+        #`1.00` = (sum(qValue <= 1.00))/n(),
+        `1.10` = (sum(1-qValue))/n(),
+        n=n()
+    ) %>% 
+    pivot_longer(cols = starts_with("0.") | starts_with("1."),
+        names_to = "qValue",
+        values_to = "cov"
+    ) %>%
+    mutate(
+        qValue = as.numeric(qValue)
+    )
+cov
+
+p <- all.df %>% filter(en > m_st & st < m_en) %>%
+    ggplot(
+        aes(
+            x = st, xend = en,
+        )
+    ) +
+    geom_segment(
+        data = . %>%
+            group_by(fiber, bin)
+            %>% summarise(st = min(st), en = max(en)),
+        aes(y = bin, yend = bin),
+        size = 0.01, color = "black",
+    ) +
+    #geom_xsidehistogram(
+    #geom_xsidedensity(
+    geom_xsideline(
+        data = cov %>% 
+            filter(st >= m_st & st <= m_en),
+        size = 0.2,
+        aes(x = st, y = cov, color=qValue, group=factor(qValue)),
+    ) +
+    geom_segment(
+        aes(y = bin, yend = bin, color = qValue),
+        size = 3
+    ) +
+    scale_x_continuous(label = comma) +
+    scale_colour_gradientn("q-value", colors = rev(myPalette(20))) +
+    scale_fill_manual("",
+        values = rev(myPalette(length(unique(all.df$fillColor))))
+    ) +
+    # scale_color_viridis_c(end = 0.9) +
+    theme_minimal_grid() +
+    theme(
+        legend.position = "right",
+        #legend.key.width=unit(5, "cm"),
+        legend.key.height=unit(2, "cm"),
+    )
+scale=0.75
+ggsave("tmp.pdf", height = 8*scale, width = 16*scale)
+```
+
+```{r}
+z <- acc.df %>%
+    ggplot(aes(qValue)) +
+    geom_histogram(bins = 100) +
+    theme_minimal_grid()
+
+
+
+z <- acc.df %>%
+    filter(en - st >= 10) %>%
+    ggplot(aes(y = 1 - qValue, x = en - st)) +
+    # geom_density_2d() +
+    geom_hex(bins = 40) +
+    scale_x_continuous(trans = "log10") +
+    scale_fill_gradientn("q-value", colors = (myPalette(10))) +
+    theme_minimal_grid()
+z = ggplot(data=cov, aes(x=st, y=n)) + geom_line() 
+#scale_y_continuous(trans="log10")
+ggsave("tmp.pdf", height = 8, width = 8)
+```
+
+
+
+```{r}
+z= all.df %>% 
+filter(en-st > 1) %>%
+ ggplot( 
+    aes(
+        x = en - st,
+        y = qValue,
+    )
+) +
+    geom_hex(bins=30) +
+    #geom_density_2d()+
+    geom_point(
+        data = . %>% sample_n(1e1),
+        alpha = 0.5, 
+        size = 0.5,
+        color="darkred"
+    ) +
+    geom_xsidedensity(adjust=0.5)+
+    geom_ysidedensity(adjust=0.2)+
+    scale_x_continuous("MSP length",
+    trans="log10",
+    label=comma
+    ) + 
+    annotation_logticks(side="b") +
+    scale_fill_continuous(type = "viridis", trans="log10") +
+    theme_minimal_grid() +
+    theme(legend.position = "top")
+ggsave("tmp.pdf", h = 8, w = 12)
+```
+
+
+
+```{r}
+n_colors=10
+values = all.df$qValue
+ii <- cut(values, breaks = seq(min(values), max(values), len = n_colors+1), 
+          include.lowest = TRUE)
+all.df$cut = ii
+colors <- colorRampPalette(brewer.pal(10, "Spectral"))(n_colors)[ii]
+u_ii = unique(ii)
+u_colors = colorRampPalette(brewer.pal(10, "Spectral"))(n_colors)[u_ii] 
+names(u_colors) = u_ii
+u_colors
+rgb = t(col2rgb(colors))
+all.df$color = paste(rgb[,1], rgb[,2], rgb[,3], sep = ",")
+all.df$hexcolor= colors
+
+all.df %>%
+    mutate(
+        tst=st,
+        ten=case_when(
+            betweenMSP ~ st, 
+            TRUE ~ en
+        ),
+        color=case_when(
+            betweenMSP ~ "230,230,230", 
+            TRUE ~ color
+        ),
+        FDR = round(qValue*100),
+        strand="+",
+    ) %>%
+    select(
+        `#ct`, st, en, 
+        fiber, FDR, strand,
+        tst, ten, color,
+        bin 
+    ) %>%
+    arrange(`#ct`, st) %>%
+    fwrite("browser.bed.gz", sep="\t", col.names=TRUE, quote=FALSE, row.names=FALSE)
+
+
+```
+
+
+
+```{r}
+coldf = unique(all.df[, c("cut", "hexcolor")])
+
+
+
+coldf %>% 
+    ggplot(aes(x = cut, y = 100, fill = hexcolor, color=hexcolor)) +
+    geom_bar(stat="identity") +
+    scale_colour_identity() +
+    scale_fill_identity() + 
+    theme_cowplot() 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+#df <- df[df$st < 4e6]
+
+fiber.df <- df %>%
+    #head(10) %>%
+    group_by(fiber) %>%
+    summarise(
+        `#ct` = unique(`#ct`),
+        f_st = min(st),
+        f_en = max(en),
+        qValue = mean(qValue),
+        starts = list(
+            start(setdiff(IRanges(min(st), max(en)), IRanges(st, en)))
+        ),
+        ends = list(
+            end(setdiff(IRanges(min(st), max(en)), IRanges(st, en)))
+        )
+    ) %>%
+    ungroup() %>%
+    group_by(`#ct`) %>%
+    mutate(
+        bin = disjointBins(
+            IRanges(f_st, f_en) + (f_en - f_st) / 20
+        ),
+    ) %>%
+    data.table()
+dim(fiber.df)
+acc.df <- fiber.df %>%
+    dplyr::select(-qValue) %>%
+    merge(df, by = c("fiber", "#ct")) %>%
+    mutate(
+        qValue = case_when(qValue > 1.0 ~ 1, TRUE ~ qValue),
+        fillColor = factor(floor(20 * qValue) / 20)
+    ) %>%
+    arrange(`#ct`, -st, fiber)
+
+all.df <- fiber.df %>%
+    tidyr::unnest(c(starts, ends)) %>%
+    mutate(
+        st = starts,
+        en = ends,
+        qValue = 1,
+        betweenMSP = TRUE,
+    ) %>%
+    dplyr::select(
+        -starts, -ends
+    ) %>%
+    bind_rows(
+        acc.df[, -c("starts", "ends")]
+    ) %>%
+    mutate(
+        fillColor = factor(floor(20 * qValue) / 20)
+    )
+```
