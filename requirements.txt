@@ -6,9 +6,8 @@ numba>=0.53
 polars>=0.13
 pandas==1.4
 numpy>=1.20
-pysam
-pyranges
-mokapot
-sklearn
-xgboost
-pyranges
+pysam==0.19.0
+pyranges==0.0.115
+mokapot==0.8
+scikit-learn==0.24
+xgboost==1.5
