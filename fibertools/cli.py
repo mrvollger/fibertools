@@ -13,6 +13,7 @@ import fibertools as ft
 import mokapot
 import numpy as np
 from sklearn.model_selection import GridSearchCV
+import gzip
 
 
 def make_msp_features_parser(subparsers):
@@ -210,7 +211,11 @@ def split_bed_over_files(args):
     logging.debug("Read in bed file.")
     index_splits = np.array_split(np.arange(bed.shape[0]), len(args.out_files))
     for index, out_file in zip(index_splits, args.out_files):
-        bed[index].to_csv(out_file, sep="\t", has_header=False)
+        if out_file.endswith(".gz"):
+            with gzip.open(out_file, "wb") as f:
+                bed[index].to_csv(f, sep="\t", has_header=False)
+        else:
+            bed[index].to_csv(out_file, sep="\t", has_header=False)
 
 
 def parse():

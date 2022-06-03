@@ -1,7 +1,6 @@
 """Utilities for reads and making features out of m6a and MSPs.
 """
 import pandas as pd
-from black import out
 from numba import njit
 import numpy as np
 import fibertools as ft
