@@ -137,3 +137,12 @@ def null_space_in_bed12(
     z.drop(columns=["st", "en"], inplace=True)
     z.rename(columns={"spacer_st": "st", "spacer_en": "en"}, inplace=True)
     return z
+
+
+def load_all(filename):
+    with open(filename, "rb") as f:
+        while True:
+            try:
+                yield pickle.load(f)
+            except EOFError:
+                break
