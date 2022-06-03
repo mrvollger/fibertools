@@ -245,7 +245,7 @@ def parse():
         dhs = read_in_bed_file(args.dhs, n_rows=args.n_rows)
         ft.utils.make_percolator_input(out, dhs)
 
-        logging.debug(f"Sorting and writting features to out.")
+        logging.debug(f"Sorting and writing features to out.")
         (
             out.sort_values(by=["ct", "st"])
             .rename(columns={"ct": "#ct"})
