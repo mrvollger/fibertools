@@ -153,42 +153,6 @@ def make_msp_features(args, df, AT_genome):
     return out
 
 
-def make_percolator_input(msp_features_df, dhs_df, sort=True):
-    """write a input file that works with percolator.
-
-    Args:
-        msp_features_df (_type_): _description_
-        out_file (_type_): _description_
-
-    return None
-    """
-    # need to add:   SpecId	Label ... Peptide Proteins
-    dhs_null = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name != "DHS"])
-    dhs_true = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name == "DHS"])
-
-    msp_features_df.insert(1, "Label", -1)
-    msp_features_df.loc[dhs_true > 0, "Label"] = 1
-    condition = (dhs_null > 0) | (dhs_true > 0)
-
-    out_df = msp_features_df.loc[condition, :].copy()
-    out_df.insert(0, "SpecId", out_df.index)
-
-    to_remove = ["ct", "st", "en", "fiber"]
-    out_df.drop(to_remove, axis=1, inplace=True)
-
-    out_df["Peptide"] = out_df.SpecId
-    out_df["Proteins"] = out_df.SpecId
-    out_df["scannr"] = out_df.SpecId
-
-    out_df.sort_values(["Label"], ascending=False, inplace=True)
-    out_df.to_csv("pin.tab", sep="\t", index=False)
-    # psms = mokapot.read_pin("pin.tab")
-
-    psms = mokapot.read_pin(out_df)
-    moka_conf, models = mokapot.brew(psms, test_fdr=0.1)
-    moka_conf.psms.to_csv(sys.stderr, sep="\t", index=False)
-
-
 def make_percolator_input(msp_features_df, dhs_df, sort=True, min_tp_msp_len=40):
     """write a input file that works with percolator.
 
@@ -271,3 +235,33 @@ def assign_classifier_fdr(pin_data, models, mokapot_conf):
         mokapot_conf.psms["mokapot score"], mokapot_conf.psms["mokapot q-value"], scores
     )
     return q_values
+
+
+def make_accessibility_model(
+    pin, train_fdr=0.10, test_fdr=0.05, subset_max_train=500_000
+):
+    logging.debug(f"dataset size: {pin.shape}")
+    logging.debug(f"dataset label counts: {pin.Label.value_counts()}")
+    train = pin[(pin.Label != 0)].copy()
+    logging.debug(f"train size: {train.shape}")
+    min_size = 1
+
+    train_psms = mokapot.read_pin(train[train.msp_len >= min_size])
+    scale_pos_weight = sum(train.Label == -1) / sum(train.Label == 1)
+    grid = {
+        "n_estimators": [25, 50, 100],
+        "scale_pos_weight": [scale_pos_weight],  # [0.5, 1, 2], #np.logspace(0, 2, 3),
+        "max_depth": [3, 6, 9],
+        "min_child_weight": [3, 6, 9],
+        "gamma": [0.1, 1, 10],
+    }
+    xgb_mod = GridSearchCV(
+        XGBClassifier(use_label_encoder=False, eval_metric="auc"),
+        param_grid=grid,
+        cv=3,
+        scoring="roc_auc",
+        verbose=2,
+    )
+    mod = mokapot.Model(xgb_mod, train_fdr=train_fdr, subset_max_train=subset_max_train)
+    moka_conf, models = mokapot.brew(train_psms, mod, test_fdr=test_fdr)
+    return (moka_conf, models)

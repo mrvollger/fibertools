@@ -9,3 +9,5 @@ numpy
 pysam
 pyranges
 mokapot
+sklearn
+xgboost
