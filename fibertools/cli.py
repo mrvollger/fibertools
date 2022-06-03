@@ -1,6 +1,7 @@
 """Console script for fibertools."""
 #!/usr/bin/env python3
 import argparse
+from email import header
 import sys
 import logging
 import pickle
@@ -54,6 +55,14 @@ def make_add_m6a_parser(subparsers):
     parser.add_argument("m6a", help="m6a bed12 file.")
     parser.add_argument(
         "-o", "--out", help="file to write output bam to.", default=sys.stdout
+    )
+
+
+def make_bed_split_parser(subparsers):
+    parser = subparsers.add_parser("split", help="Split a bed over many output files.")
+    parser.add_argument("bed", help="A bed file")
+    parser.add_argument(
+        "-o", "--out-files", help="files to split input across", nargs="+"
     )
 
 
@@ -196,6 +205,14 @@ def apply_accessibility_model(args):
     final_out.to_csv(args.out, sep="\t", index=False, compression="gzip")
 
 
+def split_bed_over_files(args):
+    bed = ft.read_in_bed_file(args.bed)
+    logging.debug("Read in bed file.")
+    index_splits = np.array_split(np.arange(bed.shape[0]), len(args.out_files))
+    for index, out_file in zip(index_splits, args.out_files):
+        bed[index].to_csv(out_file, sep="\t", has_header=False)
+
+
 def parse():
     """Console script for fibertools."""
     parser = argparse.ArgumentParser(
@@ -208,6 +225,7 @@ def parse():
     make_bam2bed_parser(subparsers)
     make_add_m6a_parser(subparsers)
     make_accessibility_model_parser(subparsers)
+    make_bed_split_parser(subparsers)
     # shared arguments
     parser.add_argument("-t", "--threads", help="n threads to use", type=int, default=1)
     parser.add_argument(
@@ -240,5 +258,7 @@ def parse():
             train_accessibility_model(args)
         else:
             apply_accessibility_model(args)
+    elif args.command == "split":
+        split_bed_over_files(args)
 
     return 0
