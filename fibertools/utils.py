@@ -4,11 +4,9 @@ import pandas as pd
 from numba import njit
 import numpy as np
 import logging
-import sys
 import fibertools as ft
 import pyranges as pr
-import mokapot
-
+import pickle
 
 numba_logger = logging.getLogger("numba")
 numba_logger.setLevel(logging.WARNING)
@@ -140,6 +138,14 @@ def null_space_in_bed12(
 
 
 def load_all(filename):
+    """Load data from a pickle file.
+
+    Args:
+        filename (_type_): _description_
+
+    Yields:
+        _type_: _description_
+    """
     with open(filename, "rb") as f:
         while True:
             try:
