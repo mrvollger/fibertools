@@ -15,6 +15,9 @@ requirements = [
     "numpy>=1.20",
     "polars>=0.13" "pysam>=0.16",
     "numba>=0.53",
+    "pyranges",
+    "xgboost",
+    "sklearn",
 ]
 
 test_requirements = []
