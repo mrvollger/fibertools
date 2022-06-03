@@ -10,15 +10,18 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements = [
-    "pandas>=1.2",
-    "numpy>=1.20",
-    "polars>=0.13" "pysam>=0.16",
-    "numba>=0.53",
-    "pyranges",
-    "xgboost",
-    "sklearn",
-]
+# requirements = [
+#    "pandas>=1.2",
+#    "numpy>=1.20",
+#    "polars>=0.13" "pysam>=0.16",
+#    "numba>=0.53",
+#    "pyranges",
+#    "xgboost",
+#    "sklearn",
+# ]
+
+with open("requirements.txt") as requirements_file:
+    requirements = [line.strip() for line in requirements_file]
 
 test_requirements = []
 
