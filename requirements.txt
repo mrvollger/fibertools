@@ -11,3 +11,4 @@ pyranges
 mokapot
 sklearn
 xgboost
+pyranges
