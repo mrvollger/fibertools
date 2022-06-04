@@ -2,6 +2,7 @@
 
 """The setup script."""
 
+from operator import contains
 from setuptools import setup, find_packages
 
 with open("README.rst") as readme_file:
@@ -19,9 +20,21 @@ with open("HISTORY.rst") as history_file:
 #    "xgboost",
 #    "sklearn",
 # ]
-
-with open("requirements.txt") as requirements_file:
-    requirements = [line.strip() for line in requirements_file]
+# with open("requirements.txt") as requirements_file:
+# requirements = [line.strip() for line in requirements_file]
+with open("environment.yml") as requirements_file:
+    requirements = []
+    in_dependencies = False
+    for line in requirements_file:
+        line = line.strip()
+        if "dependencies:" in line:
+            in_dependencies = True
+            continue
+        if line.startswith("#") or not line.startswith("- ") or ":" in line:
+            continue
+        if in_dependencies:
+            line = line.strip("- ")
+            requirements.append(line)
 
 test_requirements = []
 
