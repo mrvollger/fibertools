@@ -1,7 +1,4 @@
-"""Utilities for reads and making features out of m6a and MSPs.
-"""
 import pandas as pd
-from numba import njit
 import numpy as np
 import logging
 import fibertools as ft
@@ -13,7 +10,7 @@ numba_logger.setLevel(logging.WARNING)
 
 
 def split_to_ints(df, col, sep=",", trim=True):
-    """Split a columns with list of ints seperated by
+    """Split a columns with list of ints separated by
     "sep" into a numpy array quickly.
 
     Args:

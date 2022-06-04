@@ -1,12 +1,9 @@
 """Utilities for reads and making features out of m6a and MSPs.
 """
-import pandas as pd
 from numba import njit
 import numpy as np
-import fibertools as ft
 import mokapot
 import logging
-import sys
 from xgboost import XGBClassifier
 from sklearn.model_selection import GridSearchCV
 
@@ -108,88 +105,6 @@ def get_msp_features(row, AT_genome, bin_width=40, bin_num=5):
             }
         )
     return rtn
-
-
-def make_msp_features(args, df, AT_genome):
-    msp_stuff = []
-    rows = df.to_dicts()
-    for idx, row in enumerate(rows):
-        if row["bsize_msp"] is None or row["bst_msp"] is None:
-            continue
-        if logging.DEBUG >= logging.root.level:
-            sys.stderr.write(
-                f"\r[DEBUG]: Added featrues to {(idx+1)/len(rows):.3%} of MSPs."
-            )
-        msp_stuff += get_msp_features(
-            row, AT_genome, bin_width=args.bin_width, bin_num=args.bin_num
-        )
-    logging.debug("")
-    logging.debug("Expanding bed12s into individual MSPs.")
-
-    z = pd.DataFrame(msp_stuff)
-    # for some reason the MSPs sometimes have negative lengths
-    # z = z[(z["st"] < z["en"])]
-    # Make more MSP featrues columns
-    z["bin_m6a_frac"] = z.m6a_count / z.AT_count
-    z["m6a_frac"] = z.msp_m6a / z.msp_AT
-    z["msp_len"] = z.en - z.st
-    m6a_fracs = pd.DataFrame(
-        z["bin_m6a_frac"].tolist(),
-        columns=[f"m6a_frac_{i}" for i in range(args.bin_num)],
-    )
-    m6a_counts = pd.DataFrame(
-        z["m6a_count"].tolist(), columns=[f"m6a_count_{i}" for i in range(args.bin_num)]
-    )
-    AT_counts = pd.DataFrame(
-        z["AT_count"].tolist(), columns=[f"AT_count_{i}" for i in range(args.bin_num)]
-    )
-    out = (
-        pd.concat([z, m6a_fracs, m6a_counts, AT_counts], axis=1)
-        .drop(["bin_m6a_frac", "m6a_count", "AT_count"], axis=1)
-        .replace([np.inf, -np.inf], np.nan)
-        .fillna(0)
-    )
-    return out
-
-
-def make_percolator_input(msp_features_df, dhs_df, sort=True, min_tp_msp_len=40):
-    """write a input file that works with percolator.
-
-    Args:
-        msp_features_df (_type_): _description_
-        out_file (_type_): _description_
-
-    return None
-    """
-    # need to add:   SpecId	Label ... Peptide Proteins
-    dhs_null = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name != "DHS"])
-    dhs_true = ft.utils.n_overlaps(msp_features_df, dhs_df[dhs_df.name == "DHS"])
-
-    out_df = msp_features_df.copy()
-
-    out_df.insert(1, "Label", 0)
-    out_df.loc[dhs_true > 0, "Label"] = 1
-    out_df.loc[dhs_null > 0, "Label"] = -1
-    # if the msp is short make it null
-    out_df.loc[(dhs_true > 0) & (out_df.msp_len <= min_tp_msp_len), "Label"] = -1
-
-    condition = (dhs_null > 0) | (dhs_true > 0)
-
-    if "SpecId" in out_df.columns:
-        out_df.drop("SpecId", axis=1, inplace=True)
-    out_df.insert(0, "SpecId", out_df.index)
-
-    to_remove = ["ct", "st", "en", "fiber"]
-    out_df.drop(to_remove, axis=1, inplace=True)
-
-    out_df["Peptide"] = out_df.SpecId
-    out_df["Proteins"] = out_df.SpecId
-    out_df["scannr"] = out_df.SpecId
-    out_df["log_msp_len"] = np.log(out_df["msp_len"])
-
-    if sort:
-        out_df.sort_values(["Label"], ascending=False, inplace=True)
-    return out_df
 
 
 def find_nearest_q_values(orig_scores, orig_q_values, new_scores):
