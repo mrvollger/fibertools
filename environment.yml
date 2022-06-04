@@ -14,7 +14,7 @@ dependencies:
     - pyranges==0.0.115
     - mokapot==0.8
     - scikit-learn
-    - xgboost==1.5
+    - xgboost==1.5.1
     - Cython
     - pip>=20.1 # pip is needed as dependency
     - pip:
