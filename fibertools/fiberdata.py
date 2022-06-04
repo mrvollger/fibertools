@@ -12,7 +12,11 @@ import mokapot
 
 @dataclass
 class Fiberdata:
-    """Class for keeping track of fiber data."""
+    """A class for storing and manipulating fiberseq data.
+
+    Returns:
+        Fiberdata: A class object with dataframes for fiberseq data.
+    """
 
     msp: pl.internals.frame.DataFrame
     m6a: pl.internals.frame.DataFrame
@@ -22,6 +26,13 @@ class Fiberdata:
     accessibility: pd.core.frame.DataFrame
 
     def __init__(self, msp_file: str, m6a_file: str, n_rows: int = None):
+        """Make a new Fiberdata object.
+
+        Args:
+            msp_file (str): A bed12 file with msp data.
+            m6a_file (str): A bed12 file with m6a data.
+            n_rows (int, optional): Only read a subset of the data for testing. Defaults to None.
+        """
         self.msp = ft.read_in_bed12_file(msp_file, n_rows=n_rows, tag="msp")
         logging.debug("Read in MSP file.")
         self.m6a = ft.read_in_bed12_file(m6a_file, n_rows=n_rows, tag="m6a")
