@@ -203,7 +203,7 @@ def apply_accessibility_model(args):
         .rename(columns={"ct": "#ct"})
     )
     final_out["score"] = (final_out.qValue * 100).astype(int)
-    final_out.to_csv(args.out, sep="\t", index=False, compression="gzip")
+    final_out.to_csv(args.out, sep="\t", index=False)
 
 
 def split_bed_over_files(args):

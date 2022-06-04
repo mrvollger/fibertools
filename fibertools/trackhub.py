@@ -5,40 +5,40 @@ from .utils import disjoint_bins
 
 def generate_trackhub(df, hubdir="trackHub", ref="hg38", spacer_size=100):
     hub = """
-    hub fiberseq
-    shortLabel fiberseq
-    longLabel fiberseq
-    genomesFile genomes.txt
-    email mvollger.edu
+hub fiberseq
+shortLabel fiberseq
+longLabel fiberseq
+genomesFile genomes.txt
+email mvollger.edu
     """
 
     genomes = """
-    genome {ref}
-    trackDb trackDb.txt
+genome {ref}
+trackDb trackDb.txt
     """
 
     track_comp = """
-    track fiberseq
-    compositeTrack on
-    shortLabel fiberseq
-    longLabel fiberseq
-    type bigBed 9 +
-    visibility dense
-    maxItems 100000
-    maxHeightPixels 200:200:1
+track fiberseq
+compositeTrack on
+shortLabel fiberseq
+longLabel fiberseq
+type bigBed 9 +
+visibility dense
+maxItems 100000
+maxHeightPixels 200:200:1
     """
     sub_comp_track = """
-        track bin{i}
-        parent fiberseq
-        bigDataUrl bins/bin.{i}.bed.bb
-        shortLabel bin{i}
-        longLabel bin{i}
-        priority {i}
-        type bigBed 9 +
-        itemRgb on
-        visibility dense
-        maxHeightPixels 1:1:1
-        
+    track bin{i}
+    parent fiberseq
+    bigDataUrl bins/bin.{i}.bed.bb
+    shortLabel bin{i}
+    longLabel bin{i}
+    priority {i}
+    type bigBed 9 +
+    itemRgb on
+    visibility dense
+    maxHeightPixels 1:1:1
+    
     """
     os.makedirs(f"{hubdir}/", exist_ok=True)
 
@@ -52,6 +52,7 @@ def generate_trackhub(df, hubdir="trackHub", ref="hg38", spacer_size=100):
 
     # write the bins to file
     os.makedirs(f"{hubdir}/bed", exist_ok=True)
+    os.makedirs(f"{hubdir}/bins", exist_ok=True)
     df["bin"] = disjoint_bins(df.st, df.en, spacer_size=spacer_size)
     for cur_bin in sorted(df.bin.unique()):
         sys.stderr.write(f"\r{cur_bin}")
