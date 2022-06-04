@@ -1,17 +1,7 @@
-API
-======================================
+fibertools
+==========
 
-Top level Functions
-------------------- 
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: fibertools
-   :imported-members:
-   :members:
-
-Other
------
-
-.. automodule:: fibertools.utils
-    :members:
-
-
+   fibertools
