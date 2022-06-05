@@ -3,6 +3,7 @@
 import argparse
 import sys
 import logging
+from fibertools import trackhub
 from fibertools.readutils import read_in_bed_file
 import fibertools as ft
 import numpy as np
@@ -30,6 +31,31 @@ def make_bed_split_parser(subparsers):
     parser.add_argument(
         "-o", "--out-files", help="files to split input across", nargs="+"
     )
+
+
+def make_trackhub_parser(subparsers):
+    parser = subparsers.add_parser("trackhub", help="Make a trackhub from a bed file.")
+    parser.add_argument("bed", help="A bed file")
+    parser.add_argument("-r", "--ref", default="hg38")
+    parser.add_argument("-t", "--trackhub-dir", default="trackHub")
+    parser.add_argument(
+        "--spacer-size",
+        help="adjust minimum distance between fibers for them to be in the same bin.",
+        type=int,
+        default=100,
+    )
+
+
+def split_bed_over_files(args):
+    bed = ft.read_in_bed_file(args.bed)
+    logging.debug("Read in bed file.")
+    index_splits = np.array_split(np.arange(bed.shape[0]), len(args.out_files))
+    for index, out_file in zip(index_splits, args.out_files):
+        if out_file.endswith(".gz"):
+            with gzip.open(out_file, "wb") as f:
+                bed[index].to_csv(f, sep="\t", has_header=False)
+        else:
+            bed[index].to_csv(out_file, sep="\t", has_header=False)
 
 
 def make_accessibility_model_parser(subparsers):
@@ -101,6 +127,7 @@ def parse():
     make_add_m6a_parser(subparsers)
     make_accessibility_model_parser(subparsers)
     make_bed_split_parser(subparsers)
+    make_trackhub_parser(subparsers)
     # shared arguments
     parser.add_argument("-t", "--threads", help="n threads to use", type=int, default=1)
     parser.add_argument(
@@ -134,5 +161,13 @@ def parse():
             fiberdata.accessibility.to_csv(args.out, sep="\t", index=False)
     elif args.command == "split":
         split_bed_over_files(args)
+    elif args.command == "trackhub":
+        df = ft.read_in_bed_file(args.bed)
+        ft.trackhub.generate_trackhub(
+            df,
+            trackhub_dir=args.trackhub_dir,
+            ref=args.ref,
+            spacer_size=args.spacer_size,
+        )
 
     return 0
