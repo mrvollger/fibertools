@@ -37,6 +37,9 @@ def make_bed_split_parser(subparsers):
 def make_trackhub_parser(subparsers):
     parser = subparsers.add_parser("trackhub", help="Make a trackhub from a bed file.")
     parser.add_argument("bed", help="A bed file")
+    parser.add_argument(
+        "genome_file", help="A file with chromosome sizes for the genome."
+    )
     parser.add_argument("-r", "--ref", default="hg38")
     parser.add_argument("-t", "--trackhub-dir", default="trackHub")
     parser.add_argument(
@@ -168,6 +171,7 @@ def parse():
             df,
             trackhub_dir=args.trackhub_dir,
             ref=args.ref,
+            genome_file=args.genome_file,
             spacer_size=args.spacer_size,
         )
 
