@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import pandas as pd
 import numpy as np
 import logging
@@ -62,11 +63,12 @@ def n_overlaps(a_df, b_df):
     return a.count_overlaps(b).NumberOverlaps.values
 
 
-def disjoint_bins(start, ends, spacer_size=0):
+def disjoint_bins(contigs, start, ends, spacer_size=0):
     """returns bins that for the given intervals such that no intervals within a bin will overlap.
     INPUTS must be SORTED by start position!
 
     Args:
+        contigs (list): list of start positions
         start (list): list of start positions
         ends (list): list of end positions
         spacer_size (int, optional): minimum space between intervals in the same bin. Defaults to 0.
@@ -74,10 +76,14 @@ def disjoint_bins(start, ends, spacer_size=0):
     Returns:
         (list): A list of bins for each interval starting at 0.
     """
-    max_bin = 0
-    min_starts = [(-spacer_size, max_bin)]
+    logging.debug(f"{start[0]} {ends[0]} {spacer_size}")
+    cur_contig = None
     bins = []
-    for st, en in zip(start, ends):
+    for contig, st, en in zip(contigs, start, ends):
+        if contig != cur_contig:
+            max_bin = 0
+            min_starts = [(-spacer_size, max_bin)]
+        cur_contig = contig
         added = False
         for idx, (min_bin_st, b) in enumerate(min_starts):
             if st >= min_bin_st + spacer_size:

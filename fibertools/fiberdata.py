@@ -180,6 +180,8 @@ class Fiberdata:
         z["color"] = "230,230,230"
         z.drop(columns=["st", "en"], inplace=True)
         z.rename(columns={"spacer_st": "st", "spacer_en": "en"}, inplace=True)
+        # sometimes a couple of spacer_st are None, dropping them
+        z.dropna(inplace=True)
 
         out_cols = [
             "ct",

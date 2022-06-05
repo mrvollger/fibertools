@@ -1,6 +1,7 @@
 import os
 import sys
 from .utils import disjoint_bins
+import pandas as pd
 
 
 def generate_trackhub(df, trackhub_dir="trackHub", ref="hg38", spacer_size=100):
@@ -53,7 +54,9 @@ maxHeightPixels 200:200:1
     # write the bins to file
     os.makedirs(f"{trackhub_dir}/bed", exist_ok=True)
     os.makedirs(f"{trackhub_dir}/bins", exist_ok=True)
-    df["bin"] = disjoint_bins(df.st, df.en, spacer_size=spacer_size)
+    df["bin"] = disjoint_bins(
+        df.iloc[:, 0], df.iloc[:, 1], df.iloc[:, 2], spacer_size=spacer_size
+    )
     for cur_bin in sorted(df.bin.unique()):
         sys.stderr.write(f"\r{cur_bin}")
         (

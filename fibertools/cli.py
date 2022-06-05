@@ -3,11 +3,12 @@
 import argparse
 import sys
 import logging
-from fibertools import trackhub
 from fibertools.readutils import read_in_bed_file
+from fibertools.trackhub import generate_trackhub
 import fibertools as ft
 import numpy as np
 import gzip
+import pandas as pd
 
 
 def make_bam2bed_parser(subparsers):
@@ -162,8 +163,8 @@ def parse():
     elif args.command == "split":
         split_bed_over_files(args)
     elif args.command == "trackhub":
-        df = ft.read_in_bed_file(args.bed)
-        ft.trackhub.generate_trackhub(
+        df = pd.read_csv(args.bed, sep="\t")
+        generate_trackhub(
             df,
             trackhub_dir=args.trackhub_dir,
             ref=args.ref,
