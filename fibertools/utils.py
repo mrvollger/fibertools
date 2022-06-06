@@ -123,7 +123,7 @@ def null_space_in_bed12(
         lambda row: (row[bed12_st_col] + row[bed12_size_col])[:-1] + row["st"], axis=1
     )
     rows["spacer_en"] = rows.apply(
-        lambda row: row[bed12_st_col][1:] + row["st"] + 1, axis=1
+        lambda row: row[bed12_st_col][1:] + row["st"], axis=1
     )
     z = rows.explode(["spacer_st", "spacer_en"])
 
@@ -137,6 +137,9 @@ def null_space_in_bed12(
     z["color"] = null_color
     z.drop(columns=["st", "en"], inplace=True)
     z.rename(columns={"spacer_st": "st", "spacer_en": "en"}, inplace=True)
+
+    # sometimes a couple of spacer_st are None, dropping them
+    z.dropna(inplace=True)
     return z
 
 

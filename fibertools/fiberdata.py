@@ -136,7 +136,6 @@ class Fiberdata:
 
     def predict_accessibility(self, model_file: str):
         moka_conf_psms, models = list(ft.utils.load_all(model_file))
-        df = pd.DataFrame(self.both.to_dicts())
 
         test_psms = mokapot.read_pin(self.pin)
         all_scores = [model.predict(test_psms) for model in models]
@@ -158,30 +157,15 @@ class Fiberdata:
         out["tst"] = out["st"]
         out["ten"] = out["en"]
         out["color"] = "147,112,219"
-        # out.loc[ out.qValue < 0.5, "color"] =  "255,255,0"
-        # out.loc[ out.qValue < 0.4, "color"] =  "255,255,0"
+
         out.loc[out.qValue < 0.3, "color"] = "255,255,0"
         out.loc[out.qValue < 0.2, "color"] = "255,140,0"
         out.loc[out.qValue < 0.1, "color"] = "255,0,0"
         out.loc[out.qValue < 0.05, "color"] = "139,0,0"
-        out = out.merge(df[["fiber"]])
 
-        df["spacer_st"] = df.apply(
-            lambda row: (row["bst_msp"] + row["bsize_msp"])[:-1] + row["st"], axis=1
-        )
-        df["spacer_en"] = df.apply(
-            lambda row: row["bst_msp"][1:] + row["st"] + 1, axis=1
-        )
-        z = df.explode(["spacer_st", "spacer_en"])
+        z = ft.utils.null_space_in_bed12(self.both)
         z["qValue"] = 1
         z["strand"] = "+"
-        z["tst"] = z["spacer_st"]
-        z["ten"] = z["spacer_st"]  # make non msp thin blocks
-        z["color"] = "230,230,230"
-        z.drop(columns=["st", "en"], inplace=True)
-        z.rename(columns={"spacer_st": "st", "spacer_en": "en"}, inplace=True)
-        # sometimes a couple of spacer_st are None, dropping them
-        z.dropna(inplace=True)
 
         out_cols = [
             "ct",
