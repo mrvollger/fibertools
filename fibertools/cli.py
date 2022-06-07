@@ -13,12 +13,18 @@ import pandas as pd
 
 def make_bam2bed_parser(subparsers):
     parser = subparsers.add_parser(
-        "bam2bed", help="Extract m6a calls from bam and output bed12."
+        "bam2bed",
+        help="Extract m6a calls from bam and output bed12.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
 
 def make_add_m6a_parser(subparsers):
-    parser = subparsers.add_parser("add-m6a", help="Make MSP features")
+    parser = subparsers.add_parser(
+        "add-m6a",
+        help="Make MSP features",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("bam", help="ccs bam file.")
     parser.add_argument("m6a", help="m6a bed12 file.")
     parser.add_argument(
@@ -27,7 +33,11 @@ def make_add_m6a_parser(subparsers):
 
 
 def make_bed_split_parser(subparsers):
-    parser = subparsers.add_parser("split", help="Split a bed over many output files.")
+    parser = subparsers.add_parser(
+        "split",
+        help="Split a bed over many output files.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("bed", help="A bed file")
     parser.add_argument(
         "-o", "--out-files", help="files to split input across", nargs="+"
@@ -35,7 +45,11 @@ def make_bed_split_parser(subparsers):
 
 
 def make_trackhub_parser(subparsers):
-    parser = subparsers.add_parser("trackhub", help="Make a trackhub from a bed file.")
+    parser = subparsers.add_parser(
+        "trackhub",
+        help="Make a trackhub from a bed file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("bed", help="A bed file")
     parser.add_argument(
         "genome_file", help="A file with chromosome sizes for the genome."
@@ -50,20 +64,12 @@ def make_trackhub_parser(subparsers):
     )
 
 
-def split_bed_over_files(args):
-    bed = ft.read_in_bed_file(args.bed)
-    logging.debug("Read in bed file.")
-    index_splits = np.array_split(np.arange(bed.shape[0]), len(args.out_files))
-    for index, out_file in zip(index_splits, args.out_files):
-        if out_file.endswith(".gz"):
-            with gzip.open(out_file, "wb") as f:
-                bed[index].to_csv(f, sep="\t", has_header=False)
-        else:
-            bed[index].to_csv(out_file, sep="\t", has_header=False)
-
-
 def make_accessibility_model_parser(subparsers):
-    parser = subparsers.add_parser("model", help="Make MSP features")
+    parser = subparsers.add_parser(
+        "model",
+        help="Make MSP features",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument("msp_bed12", help="MSP bed12 file.")
     parser.add_argument("m6a_bed12", help="m6a bed12 file.")
     parser.add_argument(
@@ -125,7 +131,9 @@ def parse():
         description="", formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     subparsers = parser.add_subparsers(
-        dest="command", help="Available subcommand for fibertools", required=True
+        dest="command",
+        help="Available subcommand for fibertools",
+        required=True,
     )
     make_bam2bed_parser(subparsers)
     make_add_m6a_parser(subparsers)
