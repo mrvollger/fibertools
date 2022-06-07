@@ -98,8 +98,12 @@ def make_accessibility_model_parser(subparsers):
         type=int,
         default=100,
     )
-    parser.add_argument("--train-fdr", type=float, default=0.10)
-    parser.add_argument("--test-fdr", type=float, default=0.05)
+    parser.add_argument(
+        "--train-fdr", help="Training FDR used by mokapot.", type=float, default=0.10
+    )
+    parser.add_argument(
+        "--test-fdr", help="Testing FDR used by mokapot.", type=float, default=0.05
+    )
     parser.add_argument("-m", "--model", default=None)
     parser.add_argument(
         "-o", "--out", help="Write the accessibility model to this file."
