@@ -175,6 +175,12 @@ def parse():
     parser.add_argument(
         "-v", "--verbose", help="increase logging verbosity", action="store_true"
     )
+    parser.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version="%(prog)s {version}".format(version=ft.__version__),
+    )
     args = parser.parse_args()
 
     log_format = "[%(levelname)s][Time elapsed (ms) %(relativeCreated)d]: %(message)s"
