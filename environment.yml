@@ -14,10 +14,9 @@ dependencies:
     - pyranges>=0.0.115
     - mokapot==0.8
     - scikit-learn
-    - xgboost>=1.5.1
-    #- python>=3.10 # needed by cgranges
-    #- cgranges
+    - xgboost==1.5.1
     - Cython
+    - rust=1.61.0 # needed for pyd4
     - pip>=20.1 # pip is needed as dependency
     - pip:
           - sphinx_rtd_theme
