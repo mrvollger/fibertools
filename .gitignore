@@ -111,3 +111,7 @@ ENV/
 trackHub/*
 tmp**
 *.dat
+covs/*
+data/*
+figures/*
+to_del/*

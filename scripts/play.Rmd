@@ -9,20 +9,82 @@ library(RColorBrewer)
 library(scales)
 library(ggside)
 library(tidyverse)
+library(ggpubr)
+library(ggrepel)
 ```
+
+```{r}
+data <- "sample               FDR<0.05_in_aCRE  FDR<0.05_total  frac_in_aCRE  frac_of_bp_meth
+K562_1500U_10m_16C   17682             123596          14.30         6.30667599942827820953
+K562_1500U_10m_25C   12297             91832           13.39         9.73885071666566604918
+K562_200U_10m_16C    4731              23216           20.37         2.09166426289600931369
+K562_200U_10min_25C  13309             85483           15.56         7.48916547409401404641
+K562_500U_10m_16C    26572             164734          16.13         4.50687525403061288004
+K562_500U_10m_25C    20119             126194          15.94         5.96171722889286891450
+GM12878_???       1235233           7291598         16.94         4.20531168365629882188
+K562_1500U_10m_16C   12208             123596          9.87          6.30667599942827820953
+K562_1500U_10m_25C   8123              91832           8.84          9.73885071666566604918
+K562_200U_10m_16C    3253              23216           14.01         2.09166426289600931369
+K562_200U_10min_25C  9103              85483           10.64         7.48916547409401404641
+K562_500U_10m_16C    18349             164734          11.13         4.50687525403061288004
+K562_500U_10m_25C    13990             126194          11.08         5.96171722889286891450
+GM12878_v0.1.5       1023986           7291598         14.04         4.20531168365629882188"
+df <- fread(data) %>%
+    separate(sample,
+        into = c("sample", "condition"),
+        sep = "_", remove = FALSE, extra = "merge"
+    ) %>%
+    head(7)
+
+p <- ggplot(
+    data = df,
+    aes(y = frac_in_aCRE, x = frac_of_bp_meth)
+) +
+    geom_smooth(
+        # data = . %>% filter(biosample == "K562"),
+        method = "lm",
+        se = FALSE,
+        linetype = "dashed", color = "gray"
+    ) +
+    geom_text_repel(aes(label = condition),
+        min.segment.length = 0,
+        nudge_y = -0.4
+    ) +
+    stat_cor(
+        method = "pearson",
+        aes(
+            group = NA,
+            label = paste(..rr.label.., ..p.label.., sep = "~`,`~")
+        ),
+        label.x = 7, label.y = 18,
+        size = 5
+    ) +
+    geom_point(aes(fill = sample),
+        size = 3, shape = 21, color = "darkgrey"
+    ) +
+    xlab("Percent bases methylated with m6A") +
+    ylab("Fraction of actuated elements (FDR < 0.05)\nwithin short-read aCRE regions") +
+    scale_color_manual(values = c("darkblue", "darkorange")) +
+    scale_fill_manual(values = c("darkblue", "darkorange")) +
+    theme_minimal_grid() +
+    theme(legend.position = "top")
+
+ggsave("figures/model_with_varrying_meth.pdf", width = 7, height = 7)
+```
+
 
 
 ```{r}
 df <- fread("~/Desktop/tmp.tbl.gz")
 dim(df)
 
-all.df = df %>%
+all.df <- df %>%
     mutate(
-        betweenMSP=case_when(
+        betweenMSP = case_when(
             color == "230,230,230" ~ TRUE,
             TRUE ~ FALSE
         ),
-        fillColor = factor(floor(20 * qValue) / 20) 
+        fillColor = factor(floor(20 * qValue) / 20)
     )
 ```
 
@@ -32,27 +94,28 @@ myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
 m_st <- 3835000
 m_en <- 3865000
 
-cov = all.df %>%
+cov <- all.df %>%
     filter(en > m_st & st < m_en) %>%
     rowwise() %>%
     mutate(
         st = list(seq(st, en))
-    ) %>% 
+    ) %>%
     tidyr::unnest(st) %>%
     mutate(
-        en = st +1
+        en = st + 1
     ) %>%
-    group_by(st,en) %>%
+    group_by(st, en) %>%
     summarise(
-        `0.01` = (sum(qValue <= 0.01))/n(),
-        #`0.05` = (sum(qValue <= 0.05))/n(),
-        `0.10` = (sum(qValue <= 0.1))/n(),
-        #`0.20` = (sum(qValue <= 0.2))/n(),
-        #`1.00` = (sum(qValue <= 1.00))/n(),
-        `1.10` = (sum(1-qValue))/n(),
-        n=n()
-    ) %>% 
-    pivot_longer(cols = starts_with("0.") | starts_with("1."),
+        `0.01` = (sum(qValue <= 0.01)) / n(),
+        # `0.05` = (sum(qValue <= 0.05))/n(),
+        `0.10` = (sum(qValue <= 0.1)) / n(),
+        # `0.20` = (sum(qValue <= 0.2))/n(),
+        # `1.00` = (sum(qValue <= 1.00))/n(),
+        `1.10` = (sum(1 - qValue)) / n(),
+        n = n()
+    ) %>%
+    pivot_longer(
+        cols = starts_with("0.") | starts_with("1."),
         names_to = "qValue",
         values_to = "cov"
     ) %>%
@@ -61,7 +124,8 @@ cov = all.df %>%
     )
 cov
 
-p <- all.df %>% filter(en > m_st & st < m_en) %>%
+p <- all.df %>%
+    filter(en > m_st & st < m_en) %>%
     ggplot(
         aes(
             x = st, xend = en,
@@ -74,13 +138,13 @@ p <- all.df %>% filter(en > m_st & st < m_en) %>%
         aes(y = bin, yend = bin),
         size = 0.01, color = "black",
     ) +
-    #geom_xsidehistogram(
-    #geom_xsidedensity(
+    # geom_xsidehistogram(
+    # geom_xsidedensity(
     geom_xsideline(
-        data = cov %>% 
+        data = cov %>%
             filter(st >= m_st & st <= m_en),
         size = 0.2,
-        aes(x = st, y = cov, color=qValue, group=factor(qValue)),
+        aes(x = st, y = cov, color = qValue, group = factor(qValue)),
     ) +
     geom_segment(
         aes(y = bin, yend = bin, color = qValue),
@@ -95,11 +159,11 @@ p <- all.df %>% filter(en > m_st & st < m_en) %>%
     theme_minimal_grid() +
     theme(
         legend.position = "right",
-        #legend.key.width=unit(5, "cm"),
-        legend.key.height=unit(2, "cm"),
+        # legend.key.width=unit(5, "cm"),
+        legend.key.height = unit(2, "cm"),
     )
-scale=0.75
-ggsave("tmp.pdf", height = 8*scale, width = 16*scale)
+scale <- 0.75
+ggsave("tmp.pdf", height = 8 * scale, width = 16 * scale)
 ```
 
 ```{r}
@@ -118,38 +182,39 @@ z <- acc.df %>%
     scale_x_continuous(trans = "log10") +
     scale_fill_gradientn("q-value", colors = (myPalette(10))) +
     theme_minimal_grid()
-z = ggplot(data=cov, aes(x=st, y=n)) + geom_line() 
-#scale_y_continuous(trans="log10")
+z <- ggplot(data = cov, aes(x = st, y = n)) +
+    geom_line()
+# scale_y_continuous(trans="log10")
 ggsave("tmp.pdf", height = 8, width = 8)
 ```
 
 
 
 ```{r}
-z= all.df %>% 
-filter(en-st > 1) %>%
- ggplot( 
-    aes(
-        x = en - st,
-        y = qValue,
-    )
-) +
-    geom_hex(bins=30) +
-    #geom_density_2d()+
+z <- all.df %>%
+    filter(en - st > 1) %>%
+    ggplot(
+        aes(
+            x = en - st,
+            y = qValue,
+        )
+    ) +
+    geom_hex(bins = 30) +
+    # geom_density_2d()+
     geom_point(
         data = . %>% sample_n(1e1),
-        alpha = 0.5, 
+        alpha = 0.5,
         size = 0.5,
-        color="darkred"
+        color = "darkred"
     ) +
-    geom_xsidedensity(adjust=0.5)+
-    geom_ysidedensity(adjust=0.2)+
+    geom_xsidedensity(adjust = 0.5) +
+    geom_ysidedensity(adjust = 0.2) +
     scale_x_continuous("MSP length",
-    trans="log10",
-    label=comma
-    ) + 
-    annotation_logticks(side="b") +
-    scale_fill_continuous(type = "viridis", trans="log10") +
+        trans = "log10",
+        label = comma
+    ) +
+    annotation_logticks(side = "b") +
+    scale_fill_continuous(type = "viridis", trans = "log10") +
     theme_minimal_grid() +
     theme(legend.position = "top")
 ggsave("tmp.pdf", h = 8, w = 12)
@@ -158,59 +223,59 @@ ggsave("tmp.pdf", h = 8, w = 12)
 
 
 ```{r}
-n_colors=10
-values = all.df$qValue
-ii <- cut(values, breaks = seq(min(values), max(values), len = n_colors+1), 
-          include.lowest = TRUE)
-all.df$cut = ii
+n_colors <- 10
+values <- all.df$qValue
+ii <- cut(values,
+    breaks = seq(min(values), max(values), len = n_colors + 1),
+    include.lowest = TRUE
+)
+all.df$cut <- ii
 colors <- colorRampPalette(brewer.pal(10, "Spectral"))(n_colors)[ii]
-u_ii = unique(ii)
-u_colors = colorRampPalette(brewer.pal(10, "Spectral"))(n_colors)[u_ii] 
-names(u_colors) = u_ii
+u_ii <- unique(ii)
+u_colors <- colorRampPalette(brewer.pal(10, "Spectral"))(n_colors)[u_ii]
+names(u_colors) <- u_ii
 u_colors
-rgb = t(col2rgb(colors))
-all.df$color = paste(rgb[,1], rgb[,2], rgb[,3], sep = ",")
-all.df$hexcolor= colors
+rgb <- t(col2rgb(colors))
+all.df$color <- paste(rgb[, 1], rgb[, 2], rgb[, 3], sep = ",")
+all.df$hexcolor <- colors
 
 all.df %>%
     mutate(
-        tst=st,
-        ten=case_when(
-            betweenMSP ~ st, 
+        tst = st,
+        ten = case_when(
+            betweenMSP ~ st,
             TRUE ~ en
         ),
-        color=case_when(
-            betweenMSP ~ "230,230,230", 
+        color = case_when(
+            betweenMSP ~ "230,230,230",
             TRUE ~ color
         ),
-        FDR = round(qValue*100),
-        strand="+",
+        FDR = round(qValue * 100),
+        strand = "+",
     ) %>%
     select(
-        `#ct`, st, en, 
+        `#ct`, st, en,
         fiber, FDR, strand,
         tst, ten, color,
-        bin 
+        bin
     ) %>%
     arrange(`#ct`, st) %>%
-    fwrite("browser.bed.gz", sep="\t", col.names=TRUE, quote=FALSE, row.names=FALSE)
-
-
+    fwrite("browser.bed.gz", sep = "\t", col.names = TRUE, quote = FALSE, row.names = FALSE)
 ```
 
 
 
 ```{r}
-coldf = unique(all.df[, c("cut", "hexcolor")])
+coldf <- unique(all.df[, c("cut", "hexcolor")])
 
 
 
-coldf %>% 
-    ggplot(aes(x = cut, y = 100, fill = hexcolor, color=hexcolor)) +
-    geom_bar(stat="identity") +
+coldf %>%
+    ggplot(aes(x = cut, y = 100, fill = hexcolor, color = hexcolor)) +
+    geom_bar(stat = "identity") +
     scale_colour_identity() +
-    scale_fill_identity() + 
-    theme_cowplot() 
+    scale_fill_identity() +
+    theme_cowplot()
 ```
 
 
@@ -239,10 +304,10 @@ coldf %>%
 
 
 ```{r}
-#df <- df[df$st < 4e6]
+# df <- df[df$st < 4e6]
 
 fiber.df <- df %>%
-    #head(10) %>%
+    # head(10) %>%
     group_by(fiber) %>%
     summarise(
         `#ct` = unique(`#ct`),

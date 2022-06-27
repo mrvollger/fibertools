@@ -1,10 +1,13 @@
 """Console script for fibertools."""
 #!/usr/bin/env python3
 import argparse
+from email.policy import default
 import sys
 import logging
+from typing_extensions import Required
 from fibertools.readutils import read_in_bed_file
 from fibertools.trackhub import generate_trackhub
+from fibertools.unionbg import bed2d4
 import fibertools as ft
 import numpy as np
 import gzip
@@ -61,6 +64,28 @@ def make_trackhub_parser(subparsers):
         help="adjust minimum distance between fibers for them to be in the same bin.",
         type=int,
         default=100,
+    )
+
+
+def make_bed2d4_parser(subparsers):
+    parser = subparsers.add_parser(
+        "bed2d4",
+        help="Make a multi-track d4 file from a bed file.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("bed", help="A bed file")
+    parser.add_argument("d4", help="Output d4 file")
+    parser.add_argument(
+        "-g",
+        "--genome",
+        help="A file with chromosome sizes for the genome.",
+        required=True,
+    )
+    parser.add_argument(
+        "-c",
+        "--column",
+        help="Name of the column to split the bed file on to make bed graphs.",
+        default="name",
     )
 
 
@@ -144,6 +169,7 @@ def parse():
     make_accessibility_model_parser(subparsers)
     make_bed_split_parser(subparsers)
     make_trackhub_parser(subparsers)
+    make_bed2d4_parser(subparsers)
     # shared arguments
     parser.add_argument("-t", "--threads", help="n threads to use", type=int, default=1)
     parser.add_argument(
@@ -186,5 +212,7 @@ def parse():
             genome_file=args.genome_file,
             spacer_size=args.spacer_size,
         )
+    elif args.command == "bed2d4":
+        bed2d4(args)
 
     return 0
