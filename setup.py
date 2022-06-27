@@ -34,6 +34,8 @@ with open("environment.yml") as requirements_file:
             continue
         if in_dependencies:
             line = line.strip("- ")
+            if("# skip" in line):
+                continue
             requirements.append(line)
 
 test_requirements = []
