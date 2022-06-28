@@ -134,7 +134,7 @@ class Fiberdata:
             pickle.dump(moka_conf.psms, f)
             pickle.dump(models, f)
 
-    def predict_accessibility(self, model_file: str):
+    def predict_accessibility(self, model_file: str, max_fdr=0.30):
         moka_conf_psms, models = list(ft.utils.load_all(model_file))
 
         test_psms = mokapot.read_pin(self.pin)
@@ -157,6 +157,9 @@ class Fiberdata:
         out["tst"] = out["st"]
         out["ten"] = out["en"]
         out["color"] = "147,112,219"
+        
+        # set the values above the max_fdr to 1
+        out.loc[out.qValue >= max_fdr, "qValue"] = 1  
 
         out.loc[out.qValue < 0.3, "color"] = "255,255,0"
         out.loc[out.qValue < 0.2, "color"] = "255,140,0"

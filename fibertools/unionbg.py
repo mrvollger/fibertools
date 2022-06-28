@@ -16,20 +16,25 @@ def chrom_bg(sts, ens, chrom_len):
     return chrom
 
 
-def df_to_bg(df, genome):
-    bg_data = {}
-    for g in df.groupby("ct"):
-        chrom = g.ct[0]
-        bg_data[chrom] = chrom_bg(g.st.to_numpy(), g.en.to_numpy(), genome[chrom])
-    return bg_data
+def df_to_bg(df, chrom, genome):
+    #bg_data = {}
+    #for g in df.groupby("ct"):
+    #    chrom = g.ct[0]
+    #    bg_data[chrom] = chrom_bg(g.st.to_numpy(), g.en.to_numpy(), genome[chrom])
+    #return bg_data
+    return chrom_bg(df.st.to_numpy(), df.en.to_numpy(), genome[chrom])
 
 
 def make_d4_from_df(df, genome, d4_f):
     chroms = list(zip(genome.keys(), genome.values()))
     writer = pyd4.D4Builder(d4_f).add_chroms(chroms).for_sparse_data().get_writer()
 
-    for chrom, data in df_to_bg(df, genome).items():
+    for g in df.groupby("ct"):
+        chrom = g.ct[0]
+        data = df_to_bg(g, chrom, genome)
         writer.write_np_array(chrom, 0, data)
+    #for chrom, data in df_to_bg(df, genome).items():
+    #    writer.write_np_array(chrom, 0, data)
     writer.close()
 
 
@@ -57,10 +62,18 @@ def make_union_d4_from_df(df, genome, group_col, d4_f):
 def bed2d4(args):
     df = ft.read_in_bed_file(args.bed)
     if args.column == "score":
+        # set high fdr values to the max
+        df = df.with_column(
+            pl.when(pl.col("column_5") >= 30)
+            .then(100)
+            .otherwise(pl.col("column_5"))
+            .alias("tmp_score")
+        )
+        # set give nucleosomes their own score
         df = df.with_column(
             pl.when(pl.col("column_9") == "230,230,230")
             .then(101)
-            .otherwise(pl.col("column_5"))
+            .otherwise(pl.col("tmp_score"))
             .alias(args.column)
         )
     genome = {line.split()[0]: int(line.split()[1]) for line in open(args.genome)}

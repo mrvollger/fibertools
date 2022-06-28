@@ -114,14 +114,23 @@ def read_in_bed_file(bed_file, n_rows=None, tag=None):
         comment_char="#",
         has_header=False,
         n_rows=n_rows,
+        #encoding="utf8-lossy",
+        #ignore_errors = True,
+        quote_char=None,
+        low_memory=True,
+        use_pyarrow=True,
     )
     # df["bst"] = split_to_ints(df, "bst")
     # df["bsize"] = split_to_ints(df, "bsize")
 
+    logging.debug(df.columns)
     if tag is not None:
         df.columns = [
             f"{col}_{tag}" if idx > 4 else col for idx, col in enumerate(df.columns)
         ]
     first_four = ["ct", "st", "en", "name"]
-    df.columns = first_four + df.columns[4:]
+    df.columns = [
+        first_four[idx] if idx < 4 else col for idx, col in enumerate(df.columns)
+    ]
+    logging.debug(df.columns)
     return df
