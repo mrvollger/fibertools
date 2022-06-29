@@ -63,17 +63,17 @@ def bed2d4(args):
     df = ft.read_in_bed_file(args.bed)
     if args.column == "score":
         # set high fdr values to the max
-        df = df.with_column(
-            pl.when(pl.col("column_5") >= 30)
-            .then(100)
-            .otherwise(pl.col("column_5"))
-            .alias("tmp_score")
-        )
+        #df = df.with_column(
+        #    pl.when(pl.col("column_5") >= 30)
+        #    .then(100)
+        #    .otherwise(pl.col("column_5"))
+        #    .alias("tmp_score")
+        #)
         # set give nucleosomes their own score
         df = df.with_column(
             pl.when(pl.col("column_9") == "230,230,230")
             .then(101)
-            .otherwise(pl.col("tmp_score"))
+            .otherwise(pl.col("column_5"))
             .alias(args.column)
         )
     genome = {line.split()[0]: int(line.split()[1]) for line in open(args.genome)}
