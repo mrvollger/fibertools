@@ -22,6 +22,9 @@ def df_to_bg(df, chrom, genome):
     #    chrom = g.ct[0]
     #    bg_data[chrom] = chrom_bg(g.st.to_numpy(), g.en.to_numpy(), genome[chrom])
     #return bg_data
+    logging.debug(f"Making bg for chrom: {chrom}")
+    logging.debug(f"first row: {df[0]}")
+    logging.debug(f"group shape: {df.shape}")
     return chrom_bg(df.st.to_numpy(), df.en.to_numpy(), genome[chrom])
 
 
