@@ -157,9 +157,9 @@ class Fiberdata:
         out["tst"] = out["st"]
         out["ten"] = out["en"]
         out["color"] = "147,112,219"
-        
+
         # set the values above the max_fdr to 1
-        out.loc[out.qValue >= max_fdr, "qValue"] = 1  
+        out.loc[out.qValue >= max_fdr, "qValue"] = 1
 
         out.loc[out.qValue < 0.3, "color"] = "255,255,0"
         out.loc[out.qValue < 0.2, "color"] = "255,140,0"
