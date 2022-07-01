@@ -23,4 +23,4 @@ dependencies:
           - sphinx_rtd_theme
           - readthedocs-sphinx-search
           - polars>=0.13
-          - pyd4
+          - pyd4>=0.3.6.2

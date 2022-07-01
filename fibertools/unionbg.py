@@ -35,7 +35,7 @@ def make_d4_from_df(df, genome, d4_f):
     writer = (
         pyd4.D4Builder(d4_f)
         .add_chroms(chroms)
-        # .for_sparse_data()
+        .for_sparse_data()
         .generate_index()
         .get_writer()
     )
@@ -71,6 +71,18 @@ def make_union_d4_from_df(df, genome, group_col, d4_f):
     # close files
     [d4.close() for _tag, d4 in out_files]
 
+# does not work, to be removed.
+def simple_make_union_d4_from_df(df, genome, group_col, d4_f):
+    merged = pyd4.D4Merger(d4_f)
+    for g in df.groupby([group_col]):
+        tag = g[group_col][0]
+        temp = tempfile.NamedTemporaryFile(suffix=".d4")
+        make_d4_from_df(g, genome, temp.name) 
+        merged.add_tagged_track("q_" + str(tag), temp.name) 
+        temp.close()
+        logging.debug(f"Made d4 for group: {tag}")
+    logging.debug(f"Merging groups.")
+    merged.merge()
 
 def bed2d4(args):
     df = ft.read_in_bed_file(args.bed)
