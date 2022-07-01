@@ -1,13 +1,11 @@
 """Console script for fibertools."""
 #!/usr/bin/env python3
 import argparse
-from email.policy import default
 import sys
 import logging
-from typing_extensions import Required
 from fibertools.readutils import read_in_bed_file
 from fibertools.trackhub import generate_trackhub
-from fibertools.unionbg import bed2d4
+from fibertools.unionbg import bed2d4, make_q_values
 import fibertools as ft
 import numpy as np
 import gzip
@@ -80,6 +78,12 @@ def make_bed2d4_parser(subparsers):
         "--genome",
         help="A file with chromosome sizes for the genome.",
         required=True,
+    )
+    parser.add_argument(
+        "-q",
+        "--fdr",
+        help="Make an FDR peaks d4 from coverage d4.",
+        action="store_true",
     )
     parser.add_argument(
         "-c",
@@ -219,6 +223,9 @@ def parse():
             spacer_size=args.spacer_size,
         )
     elif args.command == "bed2d4":
-        bed2d4(args)
+        if args.fdr:
+            make_q_values(args.bed, args.d4)
+        else:
+            bed2d4(args)
 
     return 0
