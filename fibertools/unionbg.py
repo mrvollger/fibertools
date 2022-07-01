@@ -136,7 +136,7 @@ def make_q_values(in_d4, out_d4):
         bin_size = 5_000_000
         cur_st = 0
         cur_en = bin_size
-        while cur_st < ct_len:
+        while cur_en < ct_len and cur_st < ct_len:
             #if ct != "chr11" or cur_en > bin_size: break
             if cur_en > ct_len:
                 cur_en = ct_len
