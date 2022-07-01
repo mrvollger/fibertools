@@ -1,5 +1,6 @@
 import pyd4
 import tempfile
+from joblib import Parallel
 import numpy as np
 from numba import njit
 import logging
@@ -95,6 +96,17 @@ def bed2d4(args):
     make_union_d4_from_df(df, genome, args.column, args.d4)
 
 
+@njit(parallel=True)
+def make_summary_stats(matrix, log_q_values):
+    y = matrix.T
+    log_q_vals = (y[:, :-2] * log_q_values).sum(axis=1)
+    acc_cov = y[:, :-2].sum(axis=1)
+    link_cov = y[:, -2]
+    nuc_cov = y[:, -1]
+    #assert nuc_cov.sum() == link_cov.sum()
+    return (log_q_vals, acc_cov, link_cov, nuc_cov)
+
+
 def make_q_values(in_d4, out_d4):
     file = pyd4.D4File(in_d4)
     chroms = file.chroms()
@@ -121,22 +133,20 @@ def make_q_values(in_d4, out_d4):
 
     for ct, ct_len in chroms:
         logging.debug(f"Processing q-values for chrom: {ct}")
-        bin_size = 10_000_000
+        bin_size = 5_000_000
         cur_st = 0
         cur_en = bin_size
         while cur_st < ct_len:
+            #if ct != "chr11" or cur_en > bin_size: break
             if cur_en > ct_len:
                 cur_en = ct_len
 
-            y = matrix[ct, cur_st, cur_en].T
-            nuc_cov = y[:, -1]
-            link_cov = y[:, -2]
-            acc_cov = y[:, :-2].sum(axis=1)
-            log_q_vals = (y[:, :-2] * log_q_values).sum(axis=1)
-
-            for idx, data in enumerate((log_q_vals, acc_cov, link_cov, nuc_cov)):
+            cur_mat = matrix[ct, cur_st, cur_en]
+            idx = 0
+            for data in make_summary_stats(cur_mat, log_q_values):
                 w = out_temp_files[idx][1]
-                w.write_np_array(ct, 0, data)
+                w.write_np_array(ct, cur_st, data)
+                idx += 1
 
             if logging.DEBUG >= logging.root.level:
                 sys.stderr.write(f"\r[DEBUG]: {ct} {cur_en/ct_len:.2%}")
@@ -149,7 +159,7 @@ def make_q_values(in_d4, out_d4):
 
     # merge files
     for idx in range(4):
-        m.add_tagged_track(f"{idx}", temp.name)
+        m.add_tagged_track(f"{idx}", out_temp_files[idx][0].name)
     m.merge()
 
     # close temp files
