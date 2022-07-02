@@ -10,6 +10,7 @@ def generate_trackhub(
     ref="hg38",
     spacer_size=100,
     genome_file="data/hg38.chrom.sizes",
+    bw=None,
 ):
     hub = """
 hub fiberseq
@@ -47,19 +48,44 @@ maxHeightPixels 200:200:1
     maxHeightPixels 1:1:1
     
     """
+
+    bw_template = """
+track {nm}
+bigDataUrl {file}
+shortLabel {nm}
+longLabel {nm}
+type bigWig
+visibility dense
+priority {i}
+maxHeightPixels 100:100:1
+    """
+
     os.makedirs(f"{trackhub_dir}/", exist_ok=True)
 
     open(f"{trackhub_dir}/hub.txt", "w").write(hub)
     open(f"{trackhub_dir}/genomes.txt", "w").write(genomes.format(ref=ref))
     trackDb = open(f"{trackhub_dir}/trackDb.txt", "w")
-    trackDb.write(track_comp)
-    for i in range(75):
-        trackDb.write(sub_comp_track.format(i=i + 1))
-    trackDb.close()
 
     # write the bins to file
     os.makedirs(f"{trackhub_dir}/bed", exist_ok=True)
     os.makedirs(f"{trackhub_dir}/bins", exist_ok=True)
+
+    # only run if bigWigs are passed
+    if bw is not None:
+        os.makedirs(f"{trackhub_dir}/bw", exist_ok=True)
+        for idx, bw_f in enumerate(bw):
+            nm = os.path.basename(bw_f).rstrip(".bw")
+            file = (bw_f.lstrip(f"{trackhub_dir}")).lstrip("/") 
+            sys.stderr.write(f"{bw_f}\t{nm}\t{file}\n")
+            trackDb.write(bw_template.format(i=idx + 1, nm=nm, file=file))
+    
+    # bin files 
+    trackDb.write(track_comp)
+    for i in range(75):
+        trackDb.write(sub_comp_track.format(i=i + 1))
+        
+    # done with track db
+    trackDb.close()
 
     fiber_df = (
         df.groupby(["#ct", "fiber"])
@@ -72,6 +98,8 @@ maxHeightPixels 200:200:1
     )
     df = df.merge(fiber_df[["fiber", "bin"]], on=["fiber"])
     for cur_bin in sorted(df.bin.unique()):
+        if cur_bin > 75:
+            continue
         sys.stderr.write(f"\r{cur_bin}")
         out_file = f"{trackhub_dir}/bed/bin.{cur_bin}.bed"
         bb_file = f"{trackhub_dir}/bins/bin.{cur_bin}.bed.bb"

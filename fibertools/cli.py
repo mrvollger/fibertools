@@ -1,6 +1,7 @@
 """Console script for fibertools."""
 #!/usr/bin/env python3
 import argparse
+from email.policy import default
 import sys
 import logging
 from fibertools.readutils import read_in_bed_file
@@ -57,6 +58,7 @@ def make_trackhub_parser(subparsers):
     )
     parser.add_argument("-r", "--ref", default="hg38")
     parser.add_argument("-t", "--trackhub-dir", default="trackHub")
+    parser.add_argument("--bw", nargs="+", help="bw files to include", default=None)
     parser.add_argument(
         "--spacer-size",
         help="adjust minimum distance between fibers for them to be in the same bin.",
@@ -221,6 +223,7 @@ def parse():
             ref=args.ref,
             genome_file=args.genome_file,
             spacer_size=args.spacer_size,
+            bw=args.bw,
         )
     elif args.command == "bed2d4":
         if args.fdr:

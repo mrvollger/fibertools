@@ -103,7 +103,7 @@ def make_summary_stats(matrix, log_q_values):
     acc_cov = y[:, :-2].sum(axis=1)
     link_cov = y[:, -2]
     nuc_cov = y[:, -1]
-    #assert nuc_cov.sum() == link_cov.sum()
+    # assert nuc_cov.sum() == link_cov.sum()
     return (log_q_vals, acc_cov, link_cov, nuc_cov)
 
 
@@ -137,7 +137,8 @@ def make_q_values(in_d4, out_d4):
         cur_st = 0
         cur_en = bin_size
         while cur_en < ct_len and cur_st < ct_len:
-            #if ct != "chr11" or cur_en > bin_size: break
+            if ct != "chr11" or cur_en > bin_size:
+                break
             if cur_en > ct_len:
                 cur_en = ct_len
 
