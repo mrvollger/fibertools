@@ -22,7 +22,6 @@ compositeTrack on
 shortLabel fiberseq
 longLabel fiberseq
 type bigBed 9 +
-visibility dense
 maxItems 100000
 maxHeightPixels 200:200:1
 """
@@ -145,7 +144,7 @@ def generate_trackhub(
     viz = "dense"
     for i in range(75):
         trackDb.write(sub_comp_track.format(i=i + 1, viz=viz))
-        if i == 50:
+        if i >= 50:
             viz="hide"
         
     # done with track db
