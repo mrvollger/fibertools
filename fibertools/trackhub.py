@@ -3,29 +3,20 @@ import sys
 from .utils import disjoint_bins
 import pandas as pd
 
-
-def generate_trackhub(
-    df,
-    trackhub_dir="trackHub",
-    ref="hg38",
-    spacer_size=100,
-    genome_file="data/hg38.chrom.sizes",
-    bw=None,
-):
-    hub = """
+hub = """
 hub fiberseq
 shortLabel fiberseq
 longLabel fiberseq
 genomesFile genomes.txt
 email mvollger.edu
-    """
+"""
 
-    genomes = """
+genomes = """
 genome {ref}
 trackDb trackDb.txt
-    """
+"""
 
-    track_comp = """
+track_comp = """
 track fiberseq
 compositeTrack on
 shortLabel fiberseq
@@ -34,8 +25,9 @@ type bigBed 9 +
 visibility dense
 maxItems 100000
 maxHeightPixels 200:200:1
-    """
-    sub_comp_track = """
+"""
+
+sub_comp_track = """
     track bin{i}
     parent fiberseq
     bigDataUrl bins/bin.{i}.bed.bb
@@ -44,23 +36,25 @@ maxHeightPixels 200:200:1
     priority {i}
     type bigBed 9 +
     itemRgb on
-    visibility dense
+    visibility {viz}
     maxHeightPixels 1:1:1
-    
-    """
-
-    bw_comp = """
-track fiberseqsum
-compositeTrack on
-shortLabel fiberseqsum
-longLabel fiberseqsum
-type bigWig
-visibility full
-    """
+"""
  
-    bw_template = """
+bw_comp = """
+track FDR_track
+compositeTrack on
+shortLabel FDR track
+longLabel FDR track
+type bigWig 0 1000
+visibility dense
+autoScale on
+maxItems 100000
+maxHeightPixels 200:200:1
+"""
+
+bw_template = """
     track {nm}
-    parent fiberseqsum
+    parent FDR_track
     bigDataUrl {file}
     shortLabel {nm}
     longLabel {nm}
@@ -70,16 +64,18 @@ visibility full
     visibility full
     priority {i}
     maxHeightPixels 100:100:1
-    """
+"""
 
-    multi_wig = """
+multi_wig = """
 track fiberseq_coverage
+shortLabel Fiberseq Coverage
+longLabel Fiberseq Coverage
 container multiWig
 aggregate stacked
 showSubtrackColorOnUi on
-type bigWig 0 1000
-viewLimits 0:10
 maxHeighPixels 100:32:8
+autoScale on
+alwaysZero on
     
     track Accessible 
     parent fiberseq_coverage
@@ -100,6 +96,15 @@ maxHeighPixels 100:32:8
     color 169,169,169
     """
 
+
+def generate_trackhub(
+    df,
+    trackhub_dir="trackHub",
+    ref="hg38",
+    spacer_size=100,
+    genome_file="data/hg38.chrom.sizes",
+    bw=None,
+):
     os.makedirs(f"{trackhub_dir}/", exist_ok=True)
 
     open(f"{trackhub_dir}/hub.txt", "w").write(hub)
@@ -118,8 +123,9 @@ maxHeighPixels 100:32:8
         acc = None
         link = None
         for idx, bw_f in enumerate(bw):
-            nm = os.path.basename(bw_f).rstrip(".bw")
-            file = (bw_f.lstrip(f"{trackhub_dir}")).lstrip("/") 
+            base = os.path.basename(bw_f)
+            nm = base.rstrip(".bw")
+            file = f"{trackhub_dir}/bw/{base}"
             sys.stderr.write(f"{bw_f}\t{nm}\t{file}\n")
             if nm == "nuc":
                 nuc = file
@@ -136,8 +142,11 @@ maxHeighPixels 100:32:8
         
     # bin files 
     trackDb.write(track_comp)
+    viz = "dense"
     for i in range(75):
-        trackDb.write(sub_comp_track.format(i=i + 1))
+        trackDb.write(sub_comp_track.format(i=i + 1, viz=viz))
+        if i == 50:
+            viz="hide"
         
     # done with track db
     trackDb.close()
