@@ -113,6 +113,7 @@ maxHeighPixels 100:32:8
     # only run if bigWigs are passed
     if bw is not None:
         os.makedirs(f"{trackhub_dir}/bw", exist_ok=True)
+        trackDb.write(bw_comp)
         nuc = None
         acc = None
         link = None
