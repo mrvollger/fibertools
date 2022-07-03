@@ -49,15 +49,55 @@ maxHeightPixels 200:200:1
     
     """
 
-    bw_template = """
-track {nm}
-bigDataUrl {file}
-shortLabel {nm}
-longLabel {nm}
+    bw_comp = """
+track fiberseqsum
+compositeTrack on
+shortLabel fiberseqsum
+longLabel fiberseqsum
 type bigWig
-visibility dense
-priority {i}
-maxHeightPixels 100:100:1
+visibility full
+    """
+ 
+    bw_template = """
+    track {nm}
+    parent fiberseqsum
+    bigDataUrl {file}
+    shortLabel {nm}
+    longLabel {nm}
+    type bigWig
+    autoScale on
+    alwaysZero on
+    visibility full
+    priority {i}
+    maxHeightPixels 100:100:1
+    """
+
+    multi_wig = """
+track fiberseq_coverage
+container multiWig
+aggregate stacked
+showSubtrackColorOnUi on
+type bigWig 0 1000
+viewLimits 0:10
+maxHeighPixels 100:32:8
+    
+    track Accessible 
+    parent fiberseq_coverage
+    bigDataUrl {acc}
+    type bigWig
+    color 139,0,0
+    
+    track Linker
+    parent fiberseq_coverage
+    bigDataUrl {link}
+    type bigWig
+    color 147,112,219
+    
+    track Nucleosomes 
+    parent fiberseq_coverage
+    bigDataUrl {nuc}
+    type bigWig
+    color 169,169,169
     """
 
     os.makedirs(f"{trackhub_dir}/", exist_ok=True)
@@ -73,12 +113,26 @@ maxHeightPixels 100:100:1
     # only run if bigWigs are passed
     if bw is not None:
         os.makedirs(f"{trackhub_dir}/bw", exist_ok=True)
+        nuc = None
+        acc = None
+        link = None
         for idx, bw_f in enumerate(bw):
             nm = os.path.basename(bw_f).rstrip(".bw")
             file = (bw_f.lstrip(f"{trackhub_dir}")).lstrip("/") 
             sys.stderr.write(f"{bw_f}\t{nm}\t{file}\n")
-            trackDb.write(bw_template.format(i=idx + 1, nm=nm, file=file))
-    
+            if nm == "nuc":
+                nuc = file
+            elif nm == "acc":
+                acc = file
+            elif nm == "link":
+                link= file
+            else:
+                sys.stderr.write(f"Stacked bigWig!")
+                trackDb.write(bw_template.format(i=idx + 1, nm=nm, file=file))
+                
+        if nuc is not None and acc is not None and link is not None:
+            trackDb.write(multi_wig.format(acc=acc, link=link, nuc=nuc))
+        
     # bin files 
     trackDb.write(track_comp)
     for i in range(75):

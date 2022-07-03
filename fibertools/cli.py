@@ -65,6 +65,13 @@ def make_trackhub_parser(subparsers):
         type=int,
         default=100,
     )
+    parser.add_argument(
+        "-n",
+        "--n-rows",
+        help="For debugging only reads in n rows.",
+        type=int,
+        default=None,
+    )
 
 
 def make_bed2d4_parser(subparsers):
@@ -216,7 +223,7 @@ def parse():
     elif args.command == "split":
         split_bed_over_files(args)
     elif args.command == "trackhub":
-        df = pd.read_csv(args.bed, sep="\t")
+        df = pd.read_csv(args.bed, sep="\t", nrows=args.n_rows)
         generate_trackhub(
             df,
             trackhub_dir=args.trackhub_dir,
