@@ -38,7 +38,7 @@ sub_comp_track = """
     visibility {viz}
     maxHeightPixels 1:1:1
 """
- 
+
 bw_comp = """
 track FDR_track
 compositeTrack on
@@ -131,22 +131,22 @@ def generate_trackhub(
             elif nm == "acc":
                 acc = file
             elif nm == "link":
-                link= file
+                link = file
             else:
                 sys.stderr.write(f"Stacked bigWig!")
                 trackDb.write(bw_template.format(i=idx + 1, nm=nm, file=file))
-                
+
         if nuc is not None and acc is not None and link is not None:
             trackDb.write(multi_wig.format(acc=acc, link=link, nuc=nuc))
-        
-    # bin files 
+
+    # bin files
     trackDb.write(track_comp)
     viz = "dense"
     for i in range(75):
         trackDb.write(sub_comp_track.format(i=i + 1, viz=viz))
         if i >= 50:
-            viz="hide"
-        
+            viz = "hide"
+
     # done with track db
     trackDb.close()
 
