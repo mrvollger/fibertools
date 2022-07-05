@@ -67,14 +67,16 @@ bw_template = """
 
 multi_wig = """
 track fiberseq_coverage
-shortLabel Fiberseq Coverage
-longLabel Fiberseq Coverage
+longLabel fiberseq_coverage
+shortLabel fiberseq_coverage
 container multiWig
 aggregate stacked
 showSubtrackColorOnUi on
-maxHeighPixels 100:32:8
+type bigWig 0 1000
 autoScale on
 alwaysZero on
+visibility full
+maxHeightPixels 100:32:8
     
     track Accessible 
     parent fiberseq_coverage
